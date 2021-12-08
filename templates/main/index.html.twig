@@ -1,0 +1,173 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}HomeController!{% endblock %}
+
+{% block body %}
+
+    <div class="container-md shadow border-1 mb-5">
+        <div class="d-flex flex-column w-100 align-items-center">
+            <h1>Statistiques et visualisations de données Covid19</h1>
+            <p>CovidTracker est un outil permettant de suivre l'évolution de l'épidémie à Coronavirus en France.</p>
+        </div>
+
+        <h2>En un coup d'oeil</h2>
+
+        <div class="d-flex flex-row shadow border-1 justify-content-between">
+            <div class="card border-0 bg-transparent" style="width: 18rem;">
+                <div class="card-body">
+                    <h3 class="card-title">{{ dataMinusFour.tx_incid|round }}%</h3>
+                    <b class="card-text">Taux d'incidence</b>
+                    <i>Nombre de cas par semaine pour 100k habitants. Le seuil d'alerte est 50.</i>
+                </div>
+            </div>
+            <div class="card border-0 bg-transparent" style="width: 18rem;">
+                <div class="card-body">
+                    <h3 class="card-title">{{ dataMinusFour.tx_pos|round }}%</h3>
+                    <b class="card-text">Taux de positivité</b>
+                    <i>Proportion des tests qui sont positifs parmi l'ensemble des tests.</i>
+                </div>
+            </div>
+            <div class="card border-0 bg-transparent" style="width: 18rem;">
+                <div class="card-body">
+                    <h3 class="card-title">{{ dataLive.conf_j1|round }}</h3>
+                    <b class="card-text">Nouveaux cas confirmés</b>
+                    <i>Nombre de personnes contaminées par 1 malade. Au-dessus de R=1, l'épidémie progresse.</i>
+                </div>
+            </div>
+            <div class="card border-0 bg-transparent" style="width: 18rem;">
+                <div class="card-body">
+                    <h3 class="card-title">{{ (dataLive.TO * 100)|round }}%</h3>
+                    <b class="card-text">Tension hospitalière</b>
+                    <i>Nombre de lits de soins critiques occupés par les patients
+                        Covid19 par rapport au nombre de lits fin 2018.</i>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-5 d-flex justify-content-between w-100">
+            <div class="card border-0 bg-light" style="width: 40rem;">
+                <div class="card-body">
+                    <h5 class="card-title">Cas positif</h5>
+                    <canvas id="casPositif" width="400" height="200"></canvas>
+                </div>
+            </div>
+            <div class="card border-0 bg-light" style="width: 40rem;">
+                <div class="card-body">
+                    <h5 class="card-title">Adm. soins critiques</h5>
+                    <canvas id="NewAdmRea" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="mt-5 d-flex justify-content-between w-100">
+            <div class="card border-0 bg-light" style="width: 40rem;">
+                <div class="card-body">
+                    <h5 class="card-title">Soins critiques</h5>
+                    <canvas id="criticAdm" width="400" height="200"></canvas>
+                </div>
+            </div>
+            <div class="card border-0 bg-light" style="width: 40rem;">
+                <div class="card-body">
+                    <h5 class="card-title">Décès hospitaliers</h5>
+                    <canvas id="death" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="mt-5 d-flex justify-content-center align-items-center">
+            <div class="card border-0 bg-transparent" style="width: 40rem;">
+                <div class="card-body d-flex flex-column align-items-center">
+                    <h5 class="card-title">Repartition de nouveaux cas par département</h5>
+                    <p>Données sur une semaine à J-3</p>
+                    <canvas id="repByDep" width="300" height="200"></canvas>
+                </div>
+            </div>
+        </divclass>
+
+    </div>
+
+    <script>
+        function newChart(ctx, type, label, data, color, bg){
+            new Chart(ctx, {
+                type: type,
+                data: {
+                    labels: label,
+                    datasets: [{
+                        label: 'label',
+                        data: data,
+                        fill: true,
+                        borderColor: color,
+                        backgroundColor: bg,
+                        borderWidth: 1,
+                        pointRadius: 2
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        function newChartPie(ctx, type, label, data){
+            new Chart(ctx, {
+                type: type,
+                data: {
+                    labels: label,
+                    datasets: [{
+                        label: 'label',
+                        data: data,
+                        fill: true,
+                        borderColor: 'black',
+                        backgroundColor: [
+                            getColor(),
+                            getColor(),
+                            getColor(),
+                            getColor(),
+                            getColor(),
+                            getColor(),
+                            getColor(),
+                            getColor(),
+                            getColor(),
+                            getColor(),
+                        ],
+                        borderWidth: 1,
+                        pointRadius: 2
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function getColor(){
+            return '#'+(Math.random()*0x7AFFFFFF<<0).toString(16);
+        }
+
+        let ctx;
+        let myChart;
+        ctx = document.getElementById('casPositif').getContext('2d');
+        myChart = newChart(ctx, 'line', {{ dateOneWeek|raw }}, {{ dataCasPositifOneWeek }}, 'rgb(75, 192, 192)', 'rgba(75, 192, 192, .5)');
+        //
+        ctx = document.getElementById('NewAdmRea').getContext('2d');
+        myChart = newChart(ctx, 'line', {{ dateOneWeek|raw }}, {{ dataNewAdmOneWeek }}, 'rgb(156, 26, 26)', 'rgba(156, 26, 26, .5)');
+        //
+        ctx = document.getElementById('criticAdm').getContext('2d');
+        myChart = newChart(ctx, 'bar', {{ dateOneWeek|raw }}, {{ dataCriticAdmOneWeek }}, 'rgb(189, 129, 34)', 'rgba(189, 129, 34, .5)');
+        //
+        ctx = document.getElementById('death').getContext('2d');
+        myChart = newChart(ctx, 'line', {{ dateOneWeek|raw }}, {{ death }}, 'rgb(0, 0, 0)', 'rgba(0, 0, 0, .5)');
+        //
+        ctx = document.getElementById('repByDep').getContext('2d');
+        myChart = newChartPie(ctx, 'pie', {{ allReg|raw }}, {{ pos_7j }});
+    </script>
+
+
+{% endblock %}
+
+
